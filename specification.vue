@@ -2,88 +2,28 @@
 	<scroll-view scroll-y class="tui-popup-scroll">
 		<view class="tui-scrollview-box">
 			<!-- tui-attr-active -->
-			<block v-for="(Item,n) in simulated.specifications">
+			<block v-for="(Item,n) in specifications" :key="n">
 				<view class="tui-bold tui-attr-title">{{Item.name}}</view>
 				<view class="tui-attr-box">
-					<view class="tui-attr-item" v-for="(oItem,index) in Item.item" v-on:click="specificationBtn(oItem.name,n,$event,index)"
-					 v-bind:class="[oItem.isShow?'':'tui-attr-none-active',subIndex[n] == index?'tui-attr-active':'']">
-						{{oItem.name}}
+					<view class="tui-attr-item" v-for="(oItem,index) in Item.item" :key="index" v-on:click="specificationBtn(oItem.name,n,$event,index)"
+					 v-bind:class="[(oItem.isShow || oItem.isShow == undefined)?'':'tui-attr-none-active',subIndex[n] == index?'tui-attr-active':'']">
+						{{oItem.name}} {{oItem.isShow}}
 					</view>
 				</view>
 			</block>
-
 		</view>
 	</scroll-view>
 </template>
 <script>
 	export default {
+		props: {
+			simulated: [Array, Object],
+			value: [Array, Object],
+		},
 		data() {
 			return {
-				//模拟后台返回的数据 多规格
-				simulated: {
-					//所有的规格可能情况都在这个数组里
-					"difference": [{
-							"id": "19",
-							"price": "200.00",
-							"stock": "19",
-							"difference": "100,白色"
-						},
-						{
-							"id": "20",
-							"price": "300.00",
-							"stock": "29",
-							"difference": "200,白色"
-						},
-						{
-							"id": "21",
-							"price": "300.00",
-							"stock": "10",
-							"difference": "100,黑丝"
-						},
-						{
-							"id": "22",
-							"price": "300.00",
-							"stock": "0",
-							"difference": "200,黑丝"
-						},
-						{
-							"id": "23",
-							"price": "500.00",
-							"stock": "48",
-							"difference": "100,绿色"
-						},
-						{
-							"id": "24",
-							"price": "500.00",
-							"stock": "0",
-							"difference": "200,绿色"
-						}
-					],
-					"specifications": [{ //这里是要被渲染字段
-							"name": "尺寸",
-							"item": [{
-									"name": "100",
-								},
-								{
-									"name": "200",
-								}
-							]
-						},
-						{
-							"name": "颜色",
-							"item": [{
-									"name": "白色",
-								},
-								{
-									"name": "黑丝",
-								},
-								{
-									"name": "绿色",
-								}
-							]
-						}
-					]
-				},
+				difference: [],
+				specifications: [],
 				selectArr: [], //存放被选中的值
 				shopItemInfo: {}, //存放要和选中的值进行匹配的数据
 				subIndex: [], //是否选中 因为不确定是多规格还是但规格，所以这里定义数组来判断
@@ -91,13 +31,26 @@
 		},
 		created: function() {
 			var self = this;
-			for (var i in self.simulated.difference) {
-				self.shopItemInfo[self.simulated.difference[i].difference] = self.simulated.difference[
-					i]; //修改数据结构格式，改成键值对的方式，以方便和选中之后的值进行匹配
+
+			self.difference = self.simulated.difference;
+			self.specifications = self.simulated.specifications;
+
+			for (var i in self.difference) {
+				//修改数据结构格式，改成键值对的方式，以方便和选中之后的值进行匹配
+				self.shopItemInfo[self.difference[i].difference] = self.difference[
+					i];
 			}
 			self.checkItem();
 		},
 		methods: {
+			shopItemInfoBoot() {
+				var self = this;
+				for (var i in self.difference) {
+					//修改数据结构格式，改成键值对的方式，以方便和选中之后的值进行匹配
+					self.shopItemInfo[self.difference[i].difference] = self.difference[
+						i];
+				}
+			},
 			specificationBtn: function(item, n, event, index) {
 				var self = this;
 				if (self.selectArr[n] != item) {
@@ -112,7 +65,8 @@
 			},
 			checkItem: function() {
 				var self = this;
-				var option = self.simulated.specifications;
+				var option = self.specifications;
+
 				var result = []; //定义数组存储被选中的值
 				for (var i in option) {
 					result[i] = self.selectArr[i] ? self.selectArr[i] : '';
@@ -124,9 +78,9 @@
 						option[i].item[k].isShow = self.isMay(result); //在数据里面添加字段isShow来判断是否可以选择
 					}
 					result[i] = last; //还原，目的是记录点下去那个值，避免下一次执行循环时避免被覆盖
-
 				}
 				self.$forceUpdate(); //重绘
+				this.$emit('input', this.selectArr);
 			},
 			isMay: function(result) {
 				for (var i in result) {
